@@ -19,3 +19,18 @@ body {
     margin: 5px;
   }
   
+
+  #favorites-section {
+    display: flex;
+    flex-wrap: wrap;
+    overflow-y: scroll;
+    max-height: 500px;
+    border: 1px solid #ccc;
+    padding: 10px;
+  }
+  
+  #favorites-section p {
+    margin: 20px auto;
+    font-size: 18px;
+    color: #555;
+  }
