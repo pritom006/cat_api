@@ -47,7 +47,7 @@ img {
 
 /* Bottom Buttons */
 .btn-light-custom {
-  background-color: white;
+  background-color: red;
   color: black;
   border: 1px solid #ddd;
   transition: all 0.3s ease-in-out;

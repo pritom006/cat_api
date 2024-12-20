@@ -229,6 +229,7 @@ function fetchBreedCats() {
       const breeds = window.breedData.find((b) => b.id === breed);
       if (breeds) {
         breedInfoDiv.innerHTML = `
+        <p><strong>${breeds.name}</strong> (${breeds.origin}) ${breeds.id}</p>
         <p><strong>Description:</strong> ${breeds.description}</p>
         <p><strong>Learn more:</strong> <a href="${breeds.wikipedia_url}" target="_blank">Wikipedia</a></p>
       `;
