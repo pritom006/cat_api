@@ -120,39 +120,66 @@ func (c *MainController) FetchFavorites() {
 }
 
 
+
+
 func (c *MainController) AddToFavorites() {
 	// Parse the incoming JSON payload
 	var favorite models.Favorite
-	body, err := io.ReadAll(c.Ctx.Request.Body)
-	fmt.Println(body)
-	fmt.Println(err)
-	// err := json.Unmarshal(c.Ctx.Input.RequestBody, &favorite)
+	body, err := io.ReadAll(c.Ctx.Request.Body) // Read the request body
 	if err != nil {
-		// Log the error and payload for debugging
-		fmt.Printf("Failed to parse payload: %s\n", string(c.Ctx.Input.RequestBody))
-		c.Data["json"] = map[string]string{"error": "Invalid input. Ensure 'image_id' is included in the request body."}
+		fmt.Printf("Failed to read request body: %v\n", err)
+		c.Data["json"] = map[string]string{"error": "Unable to read request body"}
 		c.ServeJSON()
 		return
 	}
 
+	fmt.Printf("Raw Request Body: %s\n", string(body)) // Debugging the raw payload
+
+	// Unmarshal the JSON into the Favorite struct
+	err = json.Unmarshal(body, &favorite)
+	if err != nil {
+		fmt.Printf("Failed to parse JSON payload: %v\n", err)
+		c.Data["json"] = map[string]string{"error": "Invalid JSON format. Ensure 'image_id' is included."}
+		c.ServeJSON()
+		return
+	}
+
+	fmt.Printf("Parsed Favorite Struct: %+v\n", favorite) // Debugging the parsed struct
+
+	// Validate the parsed input
+	if favorite.ImageID == "" {
+		c.Data["json"] = map[string]string{"error": "Missing 'image_id' in the request body"}
+		c.ServeJSON()
+		return
+	}
+
+	// Retrieve API key and sub_id
 	apiKey, _ := beego.AppConfig.String("catapi_key")
-	subId := c.GetString("sub_id")
-	fmt.Println(subId)
-	url := "https://api.thecatapi.com/v1/favourites?sub_id="+ subId
+	subID := c.GetString("sub_id") // Optional sub_id parameter
+	fmt.Printf("Sub ID: %s\n", subID) // Debugging sub_id
+
+	// Construct the API URL
+	url := "https://api.thecatapi.com/v1/favourites"
+	if subID != "" {
+		url += "?sub_id=" + subID
+	}
 
 	// Create the payload for TheCatAPI
-	payload := map[string]string{
-		"image_id": favorite.ImageID,
-	}
+	payload := map[string]string{"image_id": favorite.ImageID}
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
+		fmt.Printf("Failed to marshal payload: %v\n", err)
 		c.Data["json"] = map[string]string{"error": "Failed to encode favorite data"}
 		c.ServeJSON()
 		return
 	}
 
+	fmt.Printf("Payload Sent to TheCatAPI: %s\n", string(payloadBytes)) // Debugging payload
+
+	// Create the HTTP POST request
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payloadBytes))
 	if err != nil {
+		fmt.Printf("Failed to create HTTP request: %v\n", err)
 		c.Data["json"] = map[string]string{"error": "Failed to create request"}
 		c.ServeJSON()
 		return
@@ -161,24 +188,31 @@ func (c *MainController) AddToFavorites() {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("x-api-key", apiKey)
 
+	// Send the HTTP request
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
+		fmt.Printf("HTTP request failed: %v\n", err)
 		c.Data["json"] = map[string]string{"error": "Failed to submit favorite"}
 		c.ServeJSON()
 		return
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
+	// Check the response status
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		bodyBytes, _ := io.ReadAll(resp.Body) // Read error response body for debugging
+		fmt.Printf("TheCatAPI Error Response: %s\n", string(bodyBytes))
 		c.Data["json"] = map[string]string{"error": "Failed to add to favorites. External API error."}
 		c.ServeJSON()
 		return
 	}
 
+	// Successfully added to favorites
 	c.Data["json"] = map[string]string{"message": "Added to favorites successfully"}
 	c.ServeJSON()
 }
+
 // FetchNewCatImage fetches a random cat image
 func (c *MainController) FetchNewCatImage() {
 	apiKey, _ := beego.AppConfig.String("catapi_key")
