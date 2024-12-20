@@ -1,36 +1,66 @@
+/* General styling */
 body {
-    font-family: Arial, sans-serif;
-    text-align: center;
-  }
-  .container {
-    margin: 20px;
-  }
-  button {
-    margin: 5px;
-    padding: 10px;
-    font-size: 16px;
-  }
-  img {
-    width: 300px;
-    height: auto;
-    margin: 20px;
-  }
-  #favorites-section img {
-    margin: 5px;
-  }
-  
+  font-family: Arial, sans-serif;
+  background-color: #f8f9fa;
+  text-align: center;
+}
 
-  #favorites-section {
-    display: flex;
-    flex-wrap: wrap;
-    overflow-y: scroll;
-    max-height: 500px;
-    border: 1px solid #ccc;
-    padding: 10px;
-  }
-  
-  #favorites-section p {
-    margin: 20px auto;
-    font-size: 18px;
-    color: #555;
-  }
+.container {
+  margin: 20px;
+}
+
+/* Card styling */
+.card {
+  max-width: 700px;
+  margin: 0 auto; 
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+}
+
+/* Image styling */
+img {
+  width: 300px;
+  height: auto;
+  margin: 20px;
+}
+
+#favorites-section img {
+  margin: 5px;
+}
+
+/* Favorites section */
+#favorites-section {
+  display: flex;
+  flex-wrap: wrap;
+  overflow-y: scroll;
+  max-height: 500px;
+  border: 1px solid #ccc;
+  padding: 10px;
+}
+
+#favorites-section p {
+  margin: 20px auto;
+  font-size: 18px;
+  color: #555;
+}
+
+/* Bottom Buttons */
+.btn-light-custom {
+  background-color: white;
+  color: black;
+  border: 1px solid #ddd;
+  transition: all 0.3s ease-in-out;
+}
+
+.btn-light-custom:hover {
+  color: red; /* Icon turns red */
+  border-color: red; /* Border turns red */
+}
+
+/* Top Buttons */
+button {
+  margin: 5px;
+  padding: 10px 15px;
+  font-size: 16px;
+}
