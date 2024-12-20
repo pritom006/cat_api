@@ -118,8 +118,6 @@ function fetchFavorites() {
 
 
 let currentSection = ""; // Track the currently active section
-
-// Show the relevant section
 function displaySection(section) {
   document.querySelectorAll(".section").forEach((sec) => {
     sec.style.display = "none"; // Hide all sections
@@ -127,6 +125,11 @@ function displaySection(section) {
 
   const breedSelect = document.getElementById("breed-select");
   breedSelect.style.display = "none"; // Hide breed dropdown by default
+
+  const breedInfoDiv = document.getElementById("breed-info");
+  if (section !== "breeds") {
+    breedInfoDiv.innerHTML = ""; // Clear the description and Wikipedia URL
+  }
 
   if (section === "voting") {
     document.getElementById("image-container").style.display = "block";
@@ -149,6 +152,36 @@ function displaySection(section) {
   // Update the current section
   currentSection = section;
 }
+// Show the relevant section
+// function displaySection(section) {
+//   document.querySelectorAll(".section").forEach((sec) => {
+//     sec.style.display = "none"; // Hide all sections
+//   });
+
+//   const breedSelect = document.getElementById("breed-select");
+//   breedSelect.style.display = "none"; // Hide breed dropdown by default
+
+//   if (section === "voting") {
+//     document.getElementById("image-container").style.display = "block";
+
+//     // Only fetch a new cat if coming from breeds or favorites
+//     if (currentSection === "breeds" || currentSection === "favorites") {
+//       fetchCat(true); // Force a new cat image
+//     } else {
+//       fetchCat(false); // Retain the same image
+//     }
+//   } else if (section === "breeds") {
+//     fetchBreeds();
+//     breedSelect.style.display = "block"; // Show breed dropdown
+//     document.getElementById("image-container").style.display = "block";
+//   } else if (section === "favorites") {
+//     fetchFavorites();
+//     document.getElementById("favorites-section").style.display = "flex";
+//   }
+
+//   // Update the current section
+//   currentSection = section;
+// }
 
 
 
@@ -166,6 +199,9 @@ function fetchBreeds() {
       const select = document.getElementById("breed-select");
       select.style.display = "block";
       select.innerHTML = "<option>Select Breed</option>";
+
+      window.breedData = data
+
       data.forEach((breed) => {
         const option = document.createElement("option");
         option.value = breed.id;
@@ -178,6 +214,8 @@ function fetchBreeds() {
 // Fetch cat images for the selected breed
 function fetchBreedCats() {
   const breed = document.getElementById("breed-select").value;
+  const breedInfoDiv = document.getElementById("breed-info");
+
   if (breed !== "Select Breed") {
     fetch(`https://api.thecatapi.com/v1/images/search?breed_ids=${breed}`)
       .then((res) => res.json())
@@ -186,6 +224,19 @@ function fetchBreedCats() {
         img.src = data[0].url;
         currentCatId = data[0].id;
       });
+
+      // Display breed Description and Wikipedia url
+      const breeds = window.breedData.find((b) => b.id === breed);
+      if (breeds) {
+        breedInfoDiv.innerHTML = `
+        <p><strong>Description:</strong> ${breeds.description}</p>
+        <p><strong>Learn more:</strong> <a href="${breeds.wikipedia_url}" target="_blank">Wikipedia</a></p>
+      `;
+      } else {
+        breedInfoDiv.innerHTML = "<p>No additional information available for this breed.</p>";
+      } 
+  } else {
+    breedInfoDiv.innerHTML = "";
   }
 }
 
