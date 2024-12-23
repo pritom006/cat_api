@@ -34,6 +34,9 @@ func (c *MainController) ServeFrontend() {
     c.TplName = "index.tpl" // This will render the index.tpl file
 }
 
+
+
+
 // FetchCatBreeds fetches all available cat breeds from TheCatAPI
 func (c *MainController) FetchCatBreeds() {
 	apiKey, _ := beego.AppConfig.String("catapi_key")
@@ -72,6 +75,52 @@ func (c *MainController) FetchCatBreeds() {
 
 	c.ServeJSON()
 }
+
+
+func (c *MainController) FetchBreedImages() {
+    breedID := c.GetString("breed_id")
+    apiKey, _ := beego.AppConfig.String("catapi_key")
+    url := fmt.Sprintf("https://api.thecatapi.com/v1/images/search?breed_ids=%s&limit=5", breedID)
+
+    resultChan := make(chan []map[string]interface{})
+    errorChan := make(chan error)
+
+    go func() {
+        req, err := http.NewRequest("GET", url, nil)
+        if err != nil {
+            errorChan <- err
+            return
+        }
+        req.Header.Add("x-api-key", apiKey)
+
+        client := &http.Client{}
+        resp, err := client.Do(req)
+        if err != nil {
+            errorChan <- err
+            return
+        }
+        defer resp.Body.Close()
+
+        var result []map[string]interface{}
+        if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+            errorChan <- err
+            return
+        }
+
+        resultChan <- result
+    }()
+
+    select {
+    case result := <-resultChan:
+        c.Data["json"] = result
+    case err := <-errorChan:
+        c.Data["json"] = map[string]string{"error": err.Error()}
+    }
+
+    c.ServeJSON()
+}
+
+
 
 // VoteForCat handles voting (like/dislike) for a cat image
 func (c *MainController) VoteForCat() {

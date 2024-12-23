@@ -4,17 +4,39 @@ let currentImageURL = ""; // To ensure the same image is retained in voting
 
 // Fetch a random cat image and set it as the current image
 function fetchCat(initial = false) {
+  // Check if the image should be fetched or reused
   if (initial || !currentImageURL) {
-    fetch("https://api.thecatapi.com/v1/images/search")
-      .then((res) => res.json())
+    // Call the backend API to fetch a new cat image
+    fetch("/fetch-new-cat", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((res) => {
+        // Check if the response is OK
+        if (!res.ok) {
+          throw new Error("Failed to fetch a new cat image.");
+        }
+        return res.json();
+      })
       .then((data) => {
-        const img = document.getElementById("cat-image");
-        img.src = data[0].url;
-        currentImageURL = data[0].url;
-        currentCatId = data[0].id;
+        if (data && data.url && data.id) {
+          // Update the image element and global variables
+          const img = document.getElementById("cat-image");
+          img.src = data.url;
+          currentImageURL = data.url;
+          currentCatId = data.id;
+        } else {
+          throw new Error("Invalid data format received from API.");
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching new cat image:", error);
+        alert("An error occurred while fetching the cat image. Please try again.");
       });
   } else {
-    // If currentImageURL exists, just set it without fetching again
+    // Reuse the existing image
     const img = document.getElementById("cat-image");
     img.src = currentImageURL;
   }
@@ -221,19 +243,27 @@ function fetchBreedCats() {
       <p><a href="${breedData.wikipedia_url}" target="_blank">Wikipedia</a></p>
     `;
 
-    fetch(`https://api.thecatapi.com/v1/images/search?breed_ids=${breed}&limit=5`)
+    fetch(`/fetch-breed-images?breed_id=${breed}`)
       .then((res) => res.json())
       .then((data) => {
+        if (data.error) {
+          console.error(data.error);
+          return;
+        }
         sliderContainer.innerHTML = `
           <div class="carousel-container">
             <div id="carousel-${breed}" class="carousel-wrapper">
-              ${data.map(
-                (img) =>
-                  `<div class="carousel-img"><img src="${img.url}" alt="Breed Image"></div>`
-              ).join("")}
+              ${data
+                .map(
+                  (img) =>
+                    `<div class="carousel-img"><img src="${img.url}" alt="Breed Image"></div>`
+                )
+                .join("")}
             </div>
             <div id="dots-${breed}" class="dots-container">
-              ${data.map((_, i) => `<div class="dot ${i === 0 ? "active" : ""}" data-index="${i}"></div>`).join("")}
+              ${data
+                .map((_, i) => `<div class="dot ${i === 0 ? "active" : ""}" data-index="${i}"></div>`)
+                .join("")}
             </div>
           </div>
         `;
