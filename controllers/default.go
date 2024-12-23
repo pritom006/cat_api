@@ -32,7 +32,6 @@ func (c *MainController) Prepare() {
 
 func (c *MainController) ServeFrontend() {
     c.TplName = "index.tpl" // This will render the index.tpl file
-    // If you want to use static files, make sure they're linked properly in the .tpl file
 }
 
 // FetchCatBreeds fetches all available cat breeds from TheCatAPI

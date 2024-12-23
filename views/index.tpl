@@ -11,7 +11,6 @@
 </head>
 <body>
   <div class="container mt-4 mx-auto" style="max-width: 800px;">
-    <!-- Card Wrapper -->
     <div class="card shadow rounded-3 p-4">
       <!-- Top Navigation Buttons -->
       <div class="d-flex justify-content-center mb-4">
@@ -38,6 +37,9 @@
       <div class="text-center mt-3">
         <select id="breed-select" class="form-select w-auto mx-auto" style="display: none;" onchange="fetchBreedCats()"></select>
       </div>
+
+      <!-- Image Slider for Breeds Section -->
+      <div id="breed-image-slider" class="mt-4" style="display: none;"></div>
 
       <!-- Bottom Buttons -->
       <div id="voting-icons" class="text-center mt-3">
