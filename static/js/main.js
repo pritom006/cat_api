@@ -59,6 +59,20 @@ function addToFavorites() {
 }
 
 // Fetch favorites for the "favorites" section
+// Utility function to toggle between flex and grid views
+function toggleView(viewClass) {
+  const imagesContainer = document.getElementById("images-container");
+
+  if (viewClass === "grid-view") {
+    imagesContainer.classList.remove("flex-view");
+    imagesContainer.classList.add("grid-view");
+  } else {
+    imagesContainer.classList.remove("grid-view");
+    imagesContainer.classList.add("flex-view");
+  }
+}
+
+// Fetch favorites for the "favorites" section
 function fetchFavorites() {
   fetch("/favorites", {
     method: "GET",
@@ -71,20 +85,41 @@ function fetchFavorites() {
       const container = document.getElementById("favorites-section");
       container.innerHTML = ""; // Clear previous favorites
 
+      // Add toggle buttons for views
+      const buttonContainer = document.createElement("div");
+      buttonContainer.style.marginBottom = "10px";
+
+      const flexButton = document.createElement("button");
+      flexButton.textContent = "Flex View";
+      flexButton.style.marginRight = "10px";
+      flexButton.onclick = () => toggleView("flex-view");
+
+      const gridButton = document.createElement("button");
+      gridButton.textContent = "Grid View";
+      gridButton.onclick = () => toggleView("grid-view");
+
+      buttonContainer.appendChild(flexButton);
+      buttonContainer.appendChild(gridButton);
+      container.appendChild(buttonContainer);
+
+      // Add favorite images
       if (data.length === 0) {
-        container.innerHTML = "<p>No favorites yet!</p>";
+        container.innerHTML += "<p>No favorites yet!</p>";
         return;
       }
+
+      const imagesContainer = document.createElement("div");
+      imagesContainer.id = "images-container"; // Wrapper for images
+      imagesContainer.className = "flex-view"; // Default to flex view
 
       data.forEach((item) => {
         const img = document.createElement("img");
         img.src = item.image.url;
         img.alt = "Favorite Cat";
-        img.style.width = "300px";
-        img.style.height = "auto";
-        img.style.margin = "10px";
-        container.appendChild(img);
+        imagesContainer.appendChild(img);
       });
+
+      container.appendChild(imagesContainer);
     })
     .catch((error) => {
       console.error("Error fetching favorites:", error);
@@ -100,22 +135,27 @@ function displaySection(section) {
   });
 
   const breedSelect = document.getElementById("breed-select");
-  breedSelect.style.display = "none"; // Hide breed dropdown by default
-
   const breedInfoDiv = document.getElementById("breed-info");
-  if (section !== "breeds") {
-    breedInfoDiv.innerHTML = ""; // Clear the description and Wikipedia URL
+  const sliderContainer = document.getElementById("breed-image-slider");
+
+  // Clear breed data when leaving the "breeds" section
+  if (currentSection === "breeds" && section !== "breeds") {
+    breedSelect.style.display = "none";
+    breedSelect.innerHTML = ""; // Clear dropdown
+    breedInfoDiv.innerHTML = ""; // Clear breed info
+    sliderContainer.style.display = "none"; // Hide slider
+    sliderContainer.innerHTML = ""; // Clear slider content
   }
 
-  // Hide the voting icons for the "breeds" section
   const votingIcons = document.getElementById("voting-icons");
+
   if (section === "breeds") {
     votingIcons.style.display = "none"; // Hide voting icons in breed section
-  } else {
-    votingIcons.style.display = "block"; // Show voting icons in other sections
-  }
-
-  if (section === "voting") {
+    fetchBreeds(); // Fetch breeds when entering the "breeds" section
+    breedSelect.style.display = "block"; // Show breed dropdown
+    document.getElementById("image-container").style.display = "none"; // Hide voting image container
+  } else if (section === "voting") {
+    votingIcons.style.display = "block"; // Show voting icons
     document.getElementById("image-container").style.display = "block";
 
     // Only fetch a new cat if coming from breeds or favorites
@@ -124,11 +164,8 @@ function displaySection(section) {
     } else {
       fetchCat(false); // Retain the same image
     }
-  } else if (section === "breeds") {
-    fetchBreeds();
-    breedSelect.style.display = "block"; // Show breed dropdown
-    document.getElementById("image-container").style.display = "none"; // Hide cat image in breed section
   } else if (section === "favorites") {
+    //votingIcons.style.display = none; // Show voting icons
     fetchFavorites();
     document.getElementById("favorites-section").style.display = "flex";
   }
@@ -136,6 +173,9 @@ function displaySection(section) {
   // Update the current section
   currentSection = section;
 }
+
+
+
 
 // Fetch all available breeds and populate the dropdown
 function fetchBreeds() {
@@ -159,6 +199,11 @@ function fetchBreeds() {
         option.textContent = breed.name;
         select.appendChild(option);
       });
+
+      if (data.length > 0) {
+        select.value = data[0].id;
+        fetchBreedCats();
+      }
     });
 }
 
@@ -232,54 +277,7 @@ function initializeCarouselForBreed(breedId, imageCount) {
 
   updateCarousel(0);
 }
-// function fetchBreedCats() {
-//   const breed = document.getElementById("breed-select").value;
-//   const breedInfoDiv = document.getElementById("breed-info");
 
-//   if (breed !== "Select Breed") {
-//     fetch(`https://api.thecatapi.com/v1/images/search?breed_ids=${breed}&limit=10`)  // Fetch multiple images
-//       .then((res) => res.json())
-//       .then((data) => {
-//         const sliderContainer = document.getElementById("breed-image-slider");
-//         sliderContainer.innerHTML = "";  // Clear the current images
-
-//         // Add images to the container
-//         data.forEach((imageData, index) => {
-//           const img = document.createElement("img");
-//           img.src = imageData.url;
-//           img.classList.add("img-fluid", "rounded", "border", "shadow", "breed-slider");
-//           img.style.display = (index === 0) ? "block" : "none";  // Show only the first image initially
-//           sliderContainer.appendChild(img);
-//         });
-
-//         // Initialize the slider functionality (show images one by one)
-//         let currentIndex = 0;
-//         setInterval(() => {
-//           const images = document.querySelectorAll(".breed-slider");
-//           images[currentIndex].style.display = "none"; // Hide current image
-//           currentIndex = (currentIndex + 1) % images.length; // Move to the next image
-//           images[currentIndex].style.display = "block"; // Show next image
-//         }, 3000); // Change image every 3 seconds
-
-//         // Display breed description and Wikipedia URL
-//         const breeds = window.breedData.find((b) => b.id === breed);
-//         if (breeds) {
-//           breedInfoDiv.innerHTML = `
-//             <p><strong>${breeds.name}</strong> (${breeds.origin})</p>
-//             <p><strong>Description:</strong> ${breeds.description}</p>
-//             <p><strong>Learn more:</strong> <a href="${breeds.wikipedia_url}" target="_blank">Wikipedia</a></p>
-//           `;
-//         } else {
-//           breedInfoDiv.innerHTML = "<p>No additional information available for this breed.</p>";
-//         }
-
-//         document.getElementById("breed-image-slider").style.display = "block"; // Show the breed image slider
-//       });
-//   } else {
-//     breedInfoDiv.innerHTML = "";
-//     document.getElementById("breed-image-slider").style.display = "none"; // Hide the breed image slider if no breed is selected
-//   }
-// }
 
 // Initialize the application with the first cat image
 window.onload = () => fetchCat(true);

@@ -26,7 +26,9 @@ img {
 }
 
 #favorites-section img {
-  margin: 5px;
+  /* width: 100%; 
+  height: auto; */
+  margin: 0; 
 }
 
 #favorites-section {
@@ -36,6 +38,12 @@ img {
   max-height: 500px;
   border: 1px solid #ccc;
   padding: 10px;
+}
+
+#favorites-section.grid-view {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
 }
 
 .btn-light-custom {
