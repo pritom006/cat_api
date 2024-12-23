@@ -1,4 +1,3 @@
-
 // Variable to track the current cat image ID
 let currentCatId = "";
 let currentImageURL = ""; // To ensure the same image is retained in voting

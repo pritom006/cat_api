@@ -32,7 +32,7 @@
       </div>
 
       <!-- Breed Information Section -->
-      <div id="breed-info" class="mt-3" style="display: block;"></div>
+      <div id="breed-info" class="mt-3"></div>
 
       <!-- Breeds Dropdown -->
       <div class="text-center mt-3">
@@ -40,7 +40,7 @@
       </div>
 
       <!-- Bottom Buttons -->
-      <div class="text-center mt-3">
+      <div id="voting-icons" class="text-center mt-3">
         <button class="btn btn-light-custom mx-2" onclick="voteCat(1)">
           <i class="bi bi-hand-thumbs-up"></i>
         </button>

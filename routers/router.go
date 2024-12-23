@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	beego.Router("/", &controllers.MainController{})
+	beego.Router("/", &controllers.MainController{}, "get:ServeFrontend")
 	beego.Router("/fetch-breeds", &controllers.MainController{}, "get:FetchCatBreeds")
 	beego.Router("/vote", &controllers.MainController{}, "post:VoteForCat")
 	beego.Router("/favorites", &controllers.MainController{}, "get:FetchFavorites")

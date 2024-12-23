@@ -15,11 +15,24 @@ type MainController struct {
 	beego.Controller
 }
 
-// Render the main page
-func (c *MainController) Get() {
-	c.Data["Website"] = "beego.vip"
-	c.Data["Email"] = "astaxie@gmail.com"
-	c.TplName = "index.tpl"
+
+
+
+func (c *MainController) Prepare() {
+    c.Ctx.Output.Header("Access-Control-Allow-Origin", "*")
+    c.Ctx.Output.Header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+    c.Ctx.Output.Header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
+    
+    // Handle OPTIONS requests
+    if c.Ctx.Request.Method == "OPTIONS" {
+        c.Ctx.Output.SetStatus(200)
+        c.StopRun()
+    }
+}
+
+func (c *MainController) ServeFrontend() {
+    c.TplName = "index.tpl" // This will render the index.tpl file
+    // If you want to use static files, make sure they're linked properly in the .tpl file
 }
 
 // FetchCatBreeds fetches all available cat breeds from TheCatAPI
@@ -27,30 +40,44 @@ func (c *MainController) FetchCatBreeds() {
 	apiKey, _ := beego.AppConfig.String("catapi_key")
 	url := "https://api.thecatapi.com/v1/breeds"
 
-	req, _ := http.NewRequest("GET", url, nil)
-	req.Header.Add("x-api-key", apiKey)
+	resultChan := make(chan []map[string]interface{})
+	errChan := make(chan error)
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		c.Data["json"] = map[string]string{"error": "Failed to fetch breeds"}
-		c.ServeJSON()
-		return
+	go func() {
+		req, _ := http.NewRequest("GET", url, nil)
+		req.Header.Add("x-api-key", apiKey)
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			errChan <- err
+			return
+		}
+		defer resp.Body.Close()
+
+		var result []map[string]interface{}
+		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+			errChan <- err
+			return
+		}
+
+		resultChan <- result
+	}()
+
+	select {
+	case result := <-resultChan:
+		c.Data["json"] = result
+	case err := <-errChan:
+		c.Data["json"] = map[string]string{"error": "Failed to fetch breeds: " + err.Error()}
 	}
-	defer resp.Body.Close()
 
-	var result []map[string]interface{}
-	json.NewDecoder(resp.Body).Decode(&result)
-
-	c.Data["json"] = result
 	c.ServeJSON()
 }
 
 // VoteForCat handles voting (like/dislike) for a cat image
 func (c *MainController) VoteForCat() {
 	var vote models.Vote
-	err := json.Unmarshal(c.Ctx.Input.RequestBody, &vote)
-	if err != nil {
+	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &vote); err != nil {
 		c.Data["json"] = map[string]string{"error": "Invalid input"}
 		c.ServeJSON()
 		return
@@ -66,177 +93,203 @@ func (c *MainController) VoteForCat() {
 		return
 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
-	if err != nil {
-		c.Data["json"] = map[string]string{"error": "Failed to create request"}
-		c.ServeJSON()
-		return
+	resultChan := make(chan string)
+	errChan := make(chan error)
+
+	go func() {
+		req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
+		if err != nil {
+			errChan <- err
+			return
+		}
+
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("x-api-key", apiKey)
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			errChan <- err
+			return
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+			errChan <- fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+			return
+		}
+
+		resultChan <- "Vote submitted successfully"
+	}()
+
+	select {
+	case message := <-resultChan:
+		c.Data["json"] = map[string]string{"message": message}
+	case err := <-errChan:
+		c.Data["json"] = map[string]string{"error": "Failed to submit vote: " + err.Error()}
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("x-api-key", apiKey)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		c.Data["json"] = map[string]string{"error": "Failed to submit vote"}
-		c.ServeJSON()
-		return
-	}
-	defer resp.Body.Close()
-
-	c.Data["json"] = map[string]string{"message": "Vote submitted successfully"}
 	c.ServeJSON()
 }
 
-func (c *MainController) FetchFavorites() {
-	apiKey, _ := beego.AppConfig.String("catapi_key")
-	url := "https://api.thecatapi.com/v1/favourites"
-
-	req, _ := http.NewRequest("GET", url, nil)
-	req.Header.Add("x-api-key", apiKey)
-	req.Header.Add("Cache-Control", "no-cache") // Prevent caching
-	req.Header.Add("Pragma", "no-cache")       // Ensure fresh data
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		c.Data["json"] = map[string]string{"error": "Failed to fetch favorites"}
-		c.ServeJSON()
-		return
-	}
-	defer resp.Body.Close()
-
-	var result []map[string]interface{}
-	err = json.NewDecoder(resp.Body).Decode(&result)
-	if err != nil {
-		c.Data["json"] = map[string]string{"error": "Failed to decode API response"}
-		c.ServeJSON()
-		return
-	}
-
-	c.Data["json"] = result
-	c.ServeJSON()
-}
-
-
-
-
+// AddToFavorites adds a cat image to favorites
 func (c *MainController) AddToFavorites() {
-	// Parse the incoming JSON payload
 	var favorite models.Favorite
-	body, err := io.ReadAll(c.Ctx.Request.Body) // Read the request body
+	body, err := io.ReadAll(c.Ctx.Request.Body)
+	fmt.Println(string(body))
 	if err != nil {
-		fmt.Printf("Failed to read request body: %v\n", err)
 		c.Data["json"] = map[string]string{"error": "Unable to read request body"}
 		c.ServeJSON()
 		return
 	}
 
-	fmt.Printf("Raw Request Body: %s\n", string(body)) // Debugging the raw payload
-
-	// Unmarshal the JSON into the Favorite struct
-	err = json.Unmarshal(body, &favorite)
-	if err != nil {
-		fmt.Printf("Failed to parse JSON payload: %v\n", err)
+	if err := json.Unmarshal(body, &favorite); err != nil {
 		c.Data["json"] = map[string]string{"error": "Invalid JSON format. Ensure 'image_id' is included."}
 		c.ServeJSON()
 		return
 	}
 
-	fmt.Printf("Parsed Favorite Struct: %+v\n", favorite) // Debugging the parsed struct
-
-	// Validate the parsed input
 	if favorite.ImageID == "" {
 		c.Data["json"] = map[string]string{"error": "Missing 'image_id' in the request body"}
 		c.ServeJSON()
 		return
 	}
 
-	// Retrieve API key and sub_id
 	apiKey, _ := beego.AppConfig.String("catapi_key")
-	subID := c.GetString("sub_id") // Optional sub_id parameter
-	fmt.Printf("Sub ID: %s\n", subID) // Debugging sub_id
-
-	// Construct the API URL
 	url := "https://api.thecatapi.com/v1/favourites"
-	if subID != "" {
-		url += "?sub_id=" + subID
-	}
 
-	// Create the payload for TheCatAPI
 	payload := map[string]string{"image_id": favorite.ImageID}
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
-		fmt.Printf("Failed to marshal payload: %v\n", err)
 		c.Data["json"] = map[string]string{"error": "Failed to encode favorite data"}
 		c.ServeJSON()
 		return
 	}
 
-	fmt.Printf("Payload Sent to TheCatAPI: %s\n", string(payloadBytes)) // Debugging payload
+	resultChan := make(chan string)
+	errChan := make(chan error)
 
-	// Create the HTTP POST request
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payloadBytes))
-	if err != nil {
-		fmt.Printf("Failed to create HTTP request: %v\n", err)
-		c.Data["json"] = map[string]string{"error": "Failed to create request"}
-		c.ServeJSON()
-		return
+	go func() {
+		req, err := http.NewRequest("POST", url, bytes.NewBuffer(payloadBytes))
+		if err != nil {
+			errChan <- err
+			return
+		}
+
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("x-api-key", apiKey)
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			errChan <- err
+			return
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+			bodyBytes, _ := io.ReadAll(resp.Body)
+			errChan <- fmt.Errorf("external API error: %s", string(bodyBytes))
+			return
+		}
+
+		resultChan <- "Added to favorites successfully"
+	}()
+
+	select {
+	case message := <-resultChan:
+		c.Data["json"] = map[string]string{"message": message}
+	case err := <-errChan:
+		c.Data["json"] = map[string]string{"error": "Failed to add to favorites: " + err.Error()}
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("x-api-key", apiKey)
-
-	// Send the HTTP request
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Printf("HTTP request failed: %v\n", err)
-		c.Data["json"] = map[string]string{"error": "Failed to submit favorite"}
-		c.ServeJSON()
-		return
-	}
-	defer resp.Body.Close()
-
-	// Check the response status
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		bodyBytes, _ := io.ReadAll(resp.Body) // Read error response body for debugging
-		fmt.Printf("TheCatAPI Error Response: %s\n", string(bodyBytes))
-		c.Data["json"] = map[string]string{"error": "Failed to add to favorites. External API error."}
-		c.ServeJSON()
-		return
-	}
-
-	// Successfully added to favorites
-	c.Data["json"] = map[string]string{"message": "Added to favorites successfully"}
 	c.ServeJSON()
 }
 
-// FetchNewCatImage fetches a random cat image
-func (c *MainController) FetchNewCatImage() {
+// FetchFavorites fetches favorite cat images
+func (c *MainController) FetchFavorites() {
 	apiKey, _ := beego.AppConfig.String("catapi_key")
-	url := "https://api.thecatapi.com/v1/images/search"
+	url := "https://api.thecatapi.com/v1/favourites"
 
-	req, _ := http.NewRequest("GET", url, nil)
-	req.Header.Add("x-api-key", apiKey)
+	resultChan := make(chan []map[string]interface{})
+	errChan := make(chan error)
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		c.Data["json"] = map[string]string{"error": "Failed to fetch new image"}
-		c.ServeJSON()
-		return
+	go func() {
+		req, _ := http.NewRequest("GET", url, nil)
+		req.Header.Add("x-api-key", apiKey)
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			errChan <- err
+			return
+		}
+		defer resp.Body.Close()
+
+		var result []map[string]interface{}
+		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+			errChan <- err
+			return
+		}
+
+		resultChan <- result
+	}()
+
+	select {
+	case result := <-resultChan:
+		c.Data["json"] = result
+	case err := <-errChan:
+		c.Data["json"] = map[string]string{"error": "Failed to fetch favorites: " + err.Error()}
 	}
-	defer resp.Body.Close()
 
-	var result []map[string]interface{}
-	json.NewDecoder(resp.Body).Decode(&result)
-
-	if len(result) > 0 {
-		c.Data["json"] = result[0]
-	} else {
-		c.Data["json"] = map[string]string{"error": "No image found"}
-	}
 	c.ServeJSON()
+}
+
+func (c *MainController) FetchNewCatImage() {
+    apiKey, _ := beego.AppConfig.String("catapi_key")
+    url := "https://api.thecatapi.com/v1/images/search"
+
+    // Channel to handle responses
+    resultChan := make(chan map[string]interface{})
+    errorChan := make(chan error)
+
+    // Goroutine for API request
+    go func() {
+        req, err := http.NewRequest("GET", url, nil)
+        if err != nil {
+            errorChan <- err
+            return
+        }
+        req.Header.Add("x-api-key", apiKey)
+
+        client := &http.Client{}
+        resp, err := client.Do(req)
+        if err != nil {
+            errorChan <- err
+            return
+        }
+        defer resp.Body.Close()
+
+        var result []map[string]interface{}
+        if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+            errorChan <- err
+            return
+        }
+
+        if len(result) > 0 {
+            resultChan <- result[0]
+        } else {
+            errorChan <- fmt.Errorf("no image found")
+        }
+    }()
+
+    // Handle responses via select
+    select {
+    case result := <-resultChan:
+        c.Data["json"] = result
+    case err := <-errorChan:
+        c.Data["json"] = map[string]string{"error": err.Error()}
+    }
+
+    c.ServeJSON()
 }
