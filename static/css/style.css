@@ -25,25 +25,27 @@ img {
   margin: 20px;
 }
 
-#favorites-section img {
-  /* width: 100%; 
-  height: auto; */
-  margin: 0; 
-}
-
-#favorites-section {
+/* General Styles */
+.flex-view {
   display: flex;
-  flex-wrap: wrap;
-  overflow-y: scroll;
-  max-height: 500px;
-  border: 1px solid #ccc;
-  padding: 10px;
+  flex-direction: column;
+  gap: 10px;
 }
 
-#favorites-section.grid-view {
+.grid-view {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 10px;
+}
+
+.favorite-image {
+  width: 100%;
+  height: auto;
+}
+
+.view-button.active {
+  background-color: #007bff;
+  color: white;
 }
 
 .btn-light-custom {
@@ -110,4 +112,28 @@ img {
 
 .dot.active {
   background-color: #333;
+}
+
+
+.spinner {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999; /* Ensure it stays above other content */
+}
+
+.spinner img {
+  width: 80px; /* Adjust size as needed */
+  height: 80px;
+  animation: spin 1.5s linear infinite; /* Optional rotation animation */
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }

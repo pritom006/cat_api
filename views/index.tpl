@@ -10,6 +10,10 @@
   <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
+  <!-- Spinner -->
+  <div id="spinner" class="spinner" style="display: none;">
+    <img src="/static/img/maxwell-spin.gif" alt="Loading..." class="img-fluid" />
+  </div>
   <div class="container mt-4 mx-auto" style="max-width: 800px;">
     <div class="card shadow rounded-3 p-4">
       <!-- Top Navigation Buttons -->
@@ -55,8 +59,17 @@
       </div>
 
       <!-- Favorites Section -->
-      <div id="favorites-section" class="section row mt-4 g-3 justify-content-center" style="display: none;">
-        <!-- Favorite images will be dynamically added here -->
+      <div id="favorites-section" class="section mt-4 g-3 justify-content-center" style="display: none;">
+        <!-- View Toggle Buttons -->
+        <div id="view-toggle-buttons" class="d-flex mb-3">
+          <button id="flex-view-button" class="view-button me-2">Flex View</button>
+          <button id="grid-view-button" class="view-button">Grid View</button>
+        </div>
+
+        <!-- Images Container -->
+        <div id="images-container" class="flex-view">
+          <!-- Images will be dynamically added here -->
+        </div>
       </div>
     </div>
   </div>
