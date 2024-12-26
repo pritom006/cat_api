@@ -16,26 +16,21 @@ type MainController struct {
 }
 
 
-
-
 func (c *MainController) Prepare() {
-    c.Ctx.Output.Header("Access-Control-Allow-Origin", "*")
-    c.Ctx.Output.Header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-    c.Ctx.Output.Header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
-    
-    // Handle OPTIONS requests
-    if c.Ctx.Request.Method == "OPTIONS" {
-        c.Ctx.Output.SetStatus(200)
-        c.StopRun()
-    }
+	c.Ctx.Output.Header("Access-Control-Allow-Origin", "*")
+	c.Ctx.Output.Header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	c.Ctx.Output.Header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
+
+	// Handle OPTIONS requests
+	if c.Ctx.Request.Method == "OPTIONS" {
+		c.Ctx.Output.SetStatus(200)
+		c.StopRun()
+	}
 }
 
 func (c *MainController) ServeFrontend() {
-    c.TplName = "index.tpl" // This will render the index.tpl file
+	c.TplName = "index.tpl" // This will render the index.tpl file
 }
-
-
-
 
 // FetchCatBreeds fetches all available cat breeds from TheCatAPI
 func (c *MainController) FetchCatBreeds() {
@@ -76,51 +71,48 @@ func (c *MainController) FetchCatBreeds() {
 	c.ServeJSON()
 }
 
-
 func (c *MainController) FetchBreedImages() {
-    breedID := c.GetString("breed_id")
-    apiKey, _ := beego.AppConfig.String("catapi_key")
-    url := fmt.Sprintf("https://api.thecatapi.com/v1/images/search?breed_ids=%s&limit=10", breedID)
+	breedID := c.GetString("breed_id")
+	apiKey, _ := beego.AppConfig.String("catapi_key")
+	url := fmt.Sprintf("https://api.thecatapi.com/v1/images/search?breed_ids=%s&limit=10", breedID)
 
-    resultChan := make(chan []map[string]interface{})
-    errorChan := make(chan error)
+	resultChan := make(chan []map[string]interface{})
+	errorChan := make(chan error)
 
-    go func() {
-        req, err := http.NewRequest("GET", url, nil)
-        if err != nil {
-            errorChan <- err
-            return
-        }
-        req.Header.Add("x-api-key", apiKey)
+	go func() {
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			errorChan <- err
+			return
+		}
+		req.Header.Add("x-api-key", apiKey)
 
-        client := &http.Client{}
-        resp, err := client.Do(req)
-        if err != nil {
-            errorChan <- err
-            return
-        }
-        defer resp.Body.Close()
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			errorChan <- err
+			return
+		}
+		defer resp.Body.Close()
 
-        var result []map[string]interface{}
-        if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-            errorChan <- err
-            return
-        }
+		var result []map[string]interface{}
+		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+			errorChan <- err
+			return
+		}
 
-        resultChan <- result
-    }()
+		resultChan <- result
+	}()
 
-    select {
-    case result := <-resultChan:
-        c.Data["json"] = result
-    case err := <-errorChan:
-        c.Data["json"] = map[string]string{"error": err.Error()}
-    }
+	select {
+	case result := <-resultChan:
+		c.Data["json"] = result
+	case err := <-errorChan:
+		c.Data["json"] = map[string]string{"error": err.Error()}
+	}
 
-    c.ServeJSON()
+	c.ServeJSON()
 }
-
-
 
 // VoteForCat handles voting (like/dislike) for a cat image
 func (c *MainController) VoteForCat() {
@@ -294,53 +286,50 @@ func (c *MainController) FetchFavorites() {
 }
 
 func (c *MainController) FetchNewCatImage() {
-    apiKey, _ := beego.AppConfig.String("catapi_key")
-    url := "https://api.thecatapi.com/v1/images/search"
+	apiKey, _ := beego.AppConfig.String("catapi_key")
+	url := "https://api.thecatapi.com/v1/images/search"
 
-    // Channel to handle responses
-    resultChan := make(chan map[string]interface{})
-    errorChan := make(chan error)
+	// Channel to handle responses
+	resultChan := make(chan map[string]interface{})
+	errorChan := make(chan error)
 
-    // Goroutine for API request
-    go func() {
-        req, err := http.NewRequest("GET", url, nil)
-        if err != nil {
-            errorChan <- err
-            return
-        }
-        req.Header.Add("x-api-key", apiKey)
+	// Goroutine for API request
+	go func() {
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			errorChan <- err
+			return
+		}
+		req.Header.Add("x-api-key", apiKey)
 
-        client := &http.Client{}
-        resp, err := client.Do(req)
-        if err != nil {
-            errorChan <- err
-            return
-        }
-        defer resp.Body.Close()
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			errorChan <- err
+			return
+		}
+		defer resp.Body.Close()
 
-        var result []map[string]interface{}
-        if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-            errorChan <- err
-            return
-        }
+		var result []map[string]interface{}
+		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+			errorChan <- err
+			return
+		}
 
-        if len(result) > 0 {
-            resultChan <- result[0]
-        } else {
-            errorChan <- fmt.Errorf("no image found")
-        }
-    }()
+		if len(result) > 0 {
+			resultChan <- result[0]
+		} else {
+			errorChan <- fmt.Errorf("no image found")
+		}
+	}()
 
-    // Handle responses via select
-    select {
-    case result := <-resultChan:
-        c.Data["json"] = result
-    case err := <-errorChan:
-        c.Data["json"] = map[string]string{"error": err.Error()}
-    }
+	// Handle responses via select
+	select {
+	case result := <-resultChan:
+		c.Data["json"] = result
+	case err := <-errorChan:
+		c.Data["json"] = map[string]string{"error": err.Error()}
+	}
 
-    c.ServeJSON()
+	c.ServeJSON()
 }
-
-
-

@@ -1,6 +1,5 @@
-// Variable to track the current cat image ID
 let currentCatId = "";
-let currentImageURL = ""; // To ensure the same image is retained in voting
+let currentImageURL = ""; 
 
 
 function toggleSpinner(show) {
@@ -21,7 +20,6 @@ function fetchCat(initial = false) {
       },
     })
       .then((res) => {
-        // Check if the response is OK
         if (!res.ok) {
           throw new Error("Failed to fetch a new cat image.");
         }
@@ -29,7 +27,6 @@ function fetchCat(initial = false) {
       })
       .then((data) => {
         if (data && data.url && data.id) {
-          // Update the image element and global variables
           const img = document.getElementById("cat-image");
           img.src = data.url;
           currentImageURL = data.url;
@@ -43,10 +40,9 @@ function fetchCat(initial = false) {
         alert("An error occurred while fetching the cat image. Please try again.");
       })
       .finally(() => {
-        toggleSpinner(false); // Hide cat spinner
+        toggleSpinner(false); 
       });
   } else {
-    // Reuse the existing image
     const img = document.getElementById("cat-image");
     img.src = currentImageURL;
   }
@@ -60,13 +56,13 @@ function voteCat(value) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ image_id: currentCatId, value }),
   }).then(() => {
-    fetchCat(true); // Load a new cat image after voting
+    fetchCat(true); 
   })
   .catch((error) => {
     console.error("Error voting on cat:", error);
   })
   .finally(() => {
-    toggleSpinner(false); // Hide the spinner after the fetch request is completed
+    toggleSpinner(false); 
   });
 }
 
@@ -79,13 +75,12 @@ function addToFavorites() {
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ image_id: currentCatId, sub_id: "test" }), // Ensure this matches backend expectations
+    body: JSON.stringify({ image_id: currentCatId, sub_id: "test" }), 
   })
     .then((response) => response.json())
     .then((data) => {
       if (data.message) {
         alert(data.message);
-        setTimeout(fetchFavorites, 500); // Delay to allow backend processing
       } else {
         alert(data.error || "Failed to add to favorites. Try again.");
       }
@@ -102,7 +97,6 @@ function addToFavorites() {
 }
 
 // Fetch favorites for the "favorites" section
-// Utility function to toggle between flex and grid views
 function fetchFavorites() {
   toggleSpinner(true)
   fetch("/favorites", {
@@ -123,6 +117,7 @@ function fetchFavorites() {
         imagesContainer.innerHTML = "<p>No favorites yet!</p>";
       } else {
         data.forEach((item) => {
+          console.log(item)
           const img = document.createElement("img");
           img.src = item.image.url;
           img.alt = "Favorite Image";
@@ -149,14 +144,13 @@ function toggleView(view) {
   const flexButton = document.getElementById("flex-view-button");
   const gridButton = document.getElementById("grid-view-button");
 
-  console.log("Toggle View Called:", view); // Debug log
-
+  console.log("Toggle View Called:", view); 
   if (view === "flex-view") {
-    imagesContainer.className = "flex-view"; // Set flex-view class
+    imagesContainer.className = "flex-view"; 
     flexButton.classList.add("active");
     gridButton.classList.remove("active");
   } else if (view === "grid-view") {
-    imagesContainer.className = "grid-view"; // Set grid-view class
+    imagesContainer.className = "grid-view"; 
     gridButton.classList.add("active");
     flexButton.classList.remove("active");
   }
@@ -166,125 +160,59 @@ function toggleView(view) {
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("flex-view-button").addEventListener("click", () => toggleView("flex-view"));
   document.getElementById("grid-view-button").addEventListener("click", () => toggleView("grid-view"));
-
-  // Set default view
   toggleView("flex-view");
 });
 
-// function toggleView(viewClass) {
-//   const imagesContainer = document.getElementById("images-container");
 
-//   if (viewClass === "grid-view") {
-//     imagesContainer.classList.remove("flex-view");
-//     imagesContainer.classList.add("grid-view");
-//   } else {
-//     imagesContainer.classList.remove("grid-view");
-//     imagesContainer.classList.add("flex-view");
-//   }
-// }
-
-// // Fetch favorites for the "favorites" section
-// function fetchFavorites() {
-//   fetch("/favorites", {
-//     method: "GET",
-//     headers: {
-//       "Content-Type": "application/json",
-//     },
-//   })
-//     .then((res) => res.json())
-//     .then((data) => {
-//       const container = document.getElementById("favorites-section");
-//       container.innerHTML = ""; // Clear previous favorites
-
-//       // Add toggle buttons for views
-//       const buttonContainer = document.createElement("div");
-//       buttonContainer.style.marginBottom = "10px";
-
-//       const flexButton = document.createElement("button");
-//       flexButton.textContent = "Flex View";
-//       flexButton.style.marginRight = "10px";
-//       flexButton.onclick = () => toggleView("flex-view");
-
-//       const gridButton = document.createElement("button");
-//       gridButton.textContent = "Grid View";
-//       gridButton.onclick = () => toggleView("grid-view");
-
-//       buttonContainer.appendChild(flexButton);
-//       buttonContainer.appendChild(gridButton);
-//       container.appendChild(buttonContainer);
-
-//       // Add favorite images
-//       if (data.length === 0) {
-//         container.innerHTML += "<p>No favorites yet!</p>";
-//         return;
-//       }
-
-//       const imagesContainer = document.createElement("div");
-//       imagesContainer.id = "images-container"; // Wrapper for images
-//       imagesContainer.className = "flex-view"; // Default to flex view
-
-//       data.forEach((item) => {
-//         const img = document.createElement("img");
-//         img.src = item.image.url;
-//         img.alt = "Favorite Cat";
-//         imagesContainer.appendChild(img);
-//       });
-
-//       container.appendChild(imagesContainer);
-//     })
-//     .catch((error) => {
-//       console.error("Error fetching favorites:", error);
-//     });
-// }
 
 // Track the current section being displayed
+
 let currentSection = "";
 
 function displaySection(section) {
   document.querySelectorAll(".section").forEach((sec) => {
-    sec.style.display = "none"; // Hide all sections
+    sec.style.display = "none"; 
   });
 
   const breedSelect = document.getElementById("breed-select");
   const breedInfoDiv = document.getElementById("breed-info");
   const sliderContainer = document.getElementById("breed-image-slider");
+  const favoritesSection = document.getElementById("favorites-section");
+  const votingIcons = document.getElementById("voting-icons");
 
   // Clear breed data when leaving the "breeds" section
   if (currentSection === "breeds" && section !== "breeds") {
     breedSelect.style.display = "none";
-    breedSelect.innerHTML = ""; // Clear dropdown
-    breedInfoDiv.innerHTML = ""; // Clear breed info
-    sliderContainer.style.display = "none"; // Hide slider
-    sliderContainer.innerHTML = ""; // Clear slider content
+    breedSelect.innerHTML = ""; 
+    breedInfoDiv.innerHTML = ""; 
+    sliderContainer.style.display = "none"; 
+    sliderContainer.innerHTML = ""; 
   }
 
-  const votingIcons = document.getElementById("voting-icons");
-
   if (section === "breeds") {
-    votingIcons.style.display = "none"; // Hide voting icons in breed section
-    fetchBreeds(); // Fetch breeds when entering the "breeds" section
-    breedSelect.style.display = "block"; // Show breed dropdown
-    document.getElementById("image-container").style.display = "none"; // Hide voting image container
+    votingIcons.style.display = "none"; 
+    fetchBreeds(); 
+    breedSelect.style.display = "block"; 
+    document.getElementById("image-container").style.display = "none"; 
   } else if (section === "voting") {
-    votingIcons.style.display = "block"; // Show voting icons
+    votingIcons.style.display = "block"; 
     document.getElementById("image-container").style.display = "block";
+    favoritesSection.style.display = "none"; 
 
-    // Only fetch a new cat if coming from breeds or favorites
     if (currentSection === "breeds" || currentSection === "favorites") {
-      fetchCat(true); // Force a new cat image
+      fetchCat(true); 
     } else {
-      fetchCat(false); // Retain the same image
+      fetchCat(false); 
     }
   } else if (section === "favorites") {
     votingIcons.style.display = "none"; 
     fetchFavorites();
-    document.getElementById("favorites-section").style.display = "flex";
+    favoritesSection.style.display = "flex"; 
   }
 
   // Update the current section
   currentSection = section;
 }
-
 
 
 
@@ -322,7 +250,7 @@ function fetchBreeds() {
       alert("An error occurred while fetching breeds. Please try again.");
     })
     .finally(() => {
-      toggleSpinner(false); // Hide spinner after request is complete
+      toggleSpinner(false); 
     });
 }
 
@@ -373,7 +301,7 @@ function fetchBreedCats() {
         alert("An error occurred while fetching breed images. Please try again.");
       })
       .finally(() => {
-        toggleSpinner(false); // Hide spinner after request is complete
+        toggleSpinner(false); 
       });
   } else {
     sliderContainer.style.display = "none";
