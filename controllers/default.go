@@ -26,7 +26,10 @@ func (c *MainController) Prepare() {
 	// Handle OPTIONS requests
 	if c.Ctx.Request.Method == "OPTIONS" {
 		c.Ctx.Output.SetStatus(200)
-		c.StopRun()
+		//c.StopRun()
+		c.Ctx.WriteString("")
+		c.Ctx.ResponseWriter.Flush()
+		return
 	}
 }
 
@@ -174,135 +177,6 @@ func (c *MainController) VoteForCat() {
 	c.ServeJSON()
 }
 
-// Recent AddToFavorites adds a cat image to favorites
-// func (c *MainController) AddToFavorites() {
-// 	var favorite models.Favorite
-// 	body, err := io.ReadAll(c.Ctx.Request.Body)
-// 	//fmt.Println(string(body))
-// 	if err != nil {
-// 		c.Data["json"] = map[string]string{"error": "Unable to read request body"}
-// 		c.ServeJSON()
-// 		return
-// 	}
-// 	fmt.Println("Request Body:", string(body))
-
-// 	if err := json.Unmarshal(body, &favorite); err != nil {
-// 		c.Data["json"] = map[string]string{"error": "Invalid JSON format. Ensure 'image_id' is included."}
-// 		c.ServeJSON()
-// 		return
-// 	}
-
-// 	if favorite.ImageID == "" {
-// 		c.Data["json"] = map[string]string{"error": "Missing 'image_id' in the request body"}
-// 		c.ServeJSON()
-// 		return
-// 	}
-
-// 	apiKey, _ := beego.AppConfig.String("catapi_key")
-// 	url := "https://api.thecatapi.com/v1/favourites"
-
-// 	// payload := map[string]string{"image_id": favorite.ImageID}
-// 	payload := map[string]string{
-// 		"image_id": favorite.ImageID,
-// 		"sub_id":   favorite.SubID, // Ensure you have SubID in your Favorite model
-// 	}
-
-// 	payloadBytes, err := json.Marshal(payload)
-// 	if err != nil {
-// 		c.Data["json"] = map[string]string{"error": "Failed to encode favorite data"}
-// 		c.ServeJSON()
-// 		return
-// 	}
-// 	fmt.Println(payload)
-// 	resultChan := make(chan string)
-// 	errChan := make(chan error)
-
-// 	go func() {
-// 		req, err := http.NewRequest("POST", url, bytes.NewBuffer(payloadBytes))
-// 		if err != nil {
-// 			errChan <- err
-// 			return
-// 		}
-
-// 		req.Header.Set("Content-Type", "application/json")
-// 		req.Header.Set("x-api-key", apiKey)
-
-// 		client := &http.Client{}
-// 		resp, err := client.Do(req)
-// 		if err != nil {
-// 			errChan <- err
-// 			return
-// 		}
-// 		defer resp.Body.Close()
-
-// 		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-// 			bodyBytes, _ := io.ReadAll(resp.Body)
-// 			errChan <- fmt.Errorf("external API error: %s", string(bodyBytes))
-// 			return
-// 		}
-
-// 		resultChan <- "Added to favorites successfully"
-// 	}()
-
-// 	select {
-// 	case message := <-resultChan:
-// 		c.Data["json"] = map[string]string{"message": message}
-// 	case err := <-errChan:
-// 		c.Data["json"] = map[string]string{"error": "Failed to add to favorites: " + err.Error()}
-// 		case <-time.After(5 * time.Second): // Timeout after 5 seconds
-// 		c.Data["json"] = map[string]string{"error": "Request timed out"}
-// 	}
-
-// 	c.ServeJSON()
-// }
-
-
-//recent fetchFavorites
-// FetchFavorites fetches favorite cat images
-// func (c *MainController) FetchFavorites() {
-// 	apiKey, _ := beego.AppConfig.String("catapi_key")
-// 	url := "https://api.thecatapi.com/v1/favourites"
-
-// 	resultChan := make(chan []map[string]interface{})
-// 	errChan := make(chan error)
-
-// 	go func() {
-// 		req, _ := http.NewRequest("GET", url, nil)
-// 		req.Header.Add("x-api-key", apiKey)
-
-// 		client := &http.Client{}
-// 		resp, err := client.Do(req)
-// 		if err != nil {
-// 			errChan <- err
-// 			return
-// 		}
-// 		defer resp.Body.Close()
-
-// 		if resp.StatusCode != http.StatusOK {
-// 			bodyBytes, _ := io.ReadAll(resp.Body)
-// 			fmt.Println("Response Body:", string(bodyBytes))
-// 			errChan <- fmt.Errorf("external API error: %s", string(bodyBytes))
-// 			return
-// 		}
-
-// 		var result []map[string]interface{}
-// 		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-// 			errChan <- err
-// 			return
-// 		}
-
-// 		resultChan <- result
-// 	}()
-
-// 	select {
-// 	case result := <-resultChan:
-// 		c.Data["json"] = result
-// 	case err := <-errChan:
-// 		c.Data["json"] = map[string]string{"error": "Failed to fetch favorites: " + err.Error()}
-// 	}
-
-// 	c.ServeJSON()
-// }
 
 
 func (c *MainController) FetchFavorites() {
