@@ -66,79 +66,117 @@ function voteCat(value) {
   });
 }
 
-// Handle AddFavorite functionality with subID
+
+
 function addToFavorites() {
-  toggleSpinner(true)
-  console.log("Current Cat ID:", currentCatId)
+  toggleSpinner(true);
+  console.log("Adding to favorites, Cat ID:", currentCatId);
+  
   fetch("/addToFavorites", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ image_id: currentCatId, sub_id: "test" }), 
+      method: "POST",
+      headers: {
+          "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ 
+          image_id: currentCatId,
+          sub_id: "test"
+      }),
   })
-    .then((response) => response.json())
-    .then((data) => {
+  .then(response => response.json())
+  .then(data => {
+      console.log("Add to favorites response:", data);
       if (data.message) {
-        alert(data.message);
-      } else {
-        alert(data.error || "Failed to add to favorites. Try again.");
+          alert(data.message);
+          fetchFavorites(); // Refresh favorites list
+      } else if (data.error) {
+          throw new Error(data.error);
       }
-    })
-    .then(() => {
+  })
+  .then(() => {
       fetchCat(true);
-    })
-    .catch((error) => {
+  })
+  .catch(error => {
       console.error("Error adding to favorites:", error);
-    })
-    .finally(()=> {
+      alert("Failed to add to favorites: " + error.message);
+  })
+  .finally(() => {
       toggleSpinner(false);
-    });
+  });
 }
 
-// Fetch favorites for the "favorites" section
+
+
+
 function fetchFavorites() {
-  toggleSpinner(true)
+  toggleSpinner(true);
+  console.log("Fetching favorites...");
+
   fetch("/favorites", {
-    method: "GET",
-    headers: { "Content-Type": "application/json" },
+      method: "GET",
+      headers: {
+          "Content-Type": "application/json"
+      },
   })
-    .then((res) => res.json())
-    .then((data) => {
+  .then(response => response.json())
+  .then(data => {
+      console.log("Favorites data:", data);
       const container = document.getElementById("favorites-section");
       const imagesContainer = document.getElementById("images-container");
+      
+      // Clear existing images
+      imagesContainer.innerHTML = "";
 
-      // Preserve current view mode
-      const currentView = imagesContainer.className;
-
-      imagesContainer.innerHTML = ""; // Clear existing images
-
-      if (data.length === 0) {
-        imagesContainer.innerHTML = "<p>No favorites yet!</p>";
-      } else {
-        data.forEach((item) => {
-          console.log(item)
-          const img = document.createElement("img");
-          img.src = item.image.url;
-          img.alt = "Favorite Image";
-          img.className = "favorite-image";
-          imagesContainer.appendChild(img);
-        });
+      // Handle error response
+      if (data.error) {
+          throw new Error(data.error);
       }
 
-      // Restore the current view mode
-      imagesContainer.className = currentView;
+      // Handle empty response
+      if (!Array.isArray(data) || data.length === 0) {
+          imagesContainer.innerHTML = "<p>No favorites found</p>";
+          container.style.display = "block";
+          return;
+      }
 
-      // Show the section if it's hidden
+      // Process each favorite
+      data.forEach(item => {
+          if (!item.image || !item.image.url) {
+              console.warn("Invalid favorite item:", item);
+              return;
+          }
+
+          const imgWrapper = document.createElement("div");
+          imgWrapper.className = "image-wrapper";
+
+          const img = document.createElement("img");
+          img.src = item.image.url;
+          img.alt = "Favorite Cat";
+          img.className = "favorite-image";
+          
+          // Error handling for images
+          img.onerror = () => {
+              img.src = "placeholder-image-url.jpg"; // Add a placeholder image URL
+              img.alt = "Failed to load image";
+          };
+
+          imgWrapper.appendChild(img);
+          imagesContainer.appendChild(imgWrapper);
+      });
+
       container.style.display = "block";
-    })
-    .catch((error) => {
+  })
+  .catch(error => {
       console.error("Error fetching favorites:", error);
-    })
-    .finally(()=> {
+      const imagesContainer = document.getElementById("images-container");
+      imagesContainer.innerHTML = `<p>Error loading favorites: ${error.message}</p>`;
+  })
+  .finally(() => {
       toggleSpinner(false);
-    });
-  }
+  });
+}
+
+
+
 function toggleView(view) {
   const imagesContainer = document.getElementById("images-container");
   const flexButton = document.getElementById("flex-view-button");

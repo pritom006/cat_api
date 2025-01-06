@@ -60,6 +60,10 @@
 
       <!-- Favorites Section -->
       <div id="favorites-section" class="section mt-4 g-3 justify-content-center" style="display: none;">
+         <!-- Button to Fetch Favorites -->
+        <div class="mb-3 text-center">
+            <button id="favorites-button" class="btn btn-primary">Show Favorites</button>
+        </div>
         <!-- View Toggle Buttons -->
         <div id="view-toggle-buttons" class="d-flex mb-3">
           <button id="flex-view-button" class="view-button me-2">Flex View</button>

@@ -4,16 +4,20 @@ import (
 	"catapigo/controllers"
 	"catapigo/models"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
-	"fmt"
 
-	"github.com/beego/beego/v2/server/web/context"
+	// "github.com/stretchr/testify/assert"
+	// "github.com/stretchr/testify/mock"
+	// "github.com/stretchr/testify/require"
+
 	beego "github.com/beego/beego/v2/server/web"
+	"github.com/beego/beego/v2/server/web/context"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -87,6 +91,8 @@ func TestVoteForCat(t *testing.T) {
 		})
 	})
 }
+
+// MockHttpClient is a mock implementation of http.Client
 
 func TestFetchCatBreeds(t *testing.T) {
 	Convey("Testing FetchCatBreeds function", t, func() {
